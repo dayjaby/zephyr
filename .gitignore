@@ -43,6 +43,8 @@ doc/doc.warnings
 .vscode
 hide-defaults-note
 
+share/zephyr-package/cmake/current_path.txt
+
 # Tag files
 GPATH
 GRTAGS

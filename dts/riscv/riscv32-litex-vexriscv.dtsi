@@ -41,11 +41,11 @@
 			reg-names = "irq_mask", "irq_pending";
 			riscv,max-priority = <7>;
 		};
-		uart0: serial@e0001800 {
+		uart0: serial@f0002000 {
 			compatible = "litex,uart0";
 			interrupt-parent = <&intc0>;
 			interrupts = <2 10>;
-			reg = <0xe0001800 0x18>;
+			reg = <0xf0002000 0x18>;
 			reg-names = "control";
 			label = "uart0";
 			status = "disabled";
@@ -61,20 +61,20 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
-		timer0: timer@e0002800 {
+		timer0: timer@f0002800 {
 			compatible = "litex,timer0";
 			interrupt-parent = <&intc0>;
 			interrupts = <1 0>;
-			reg = <0xe0002800 0x40>;
+			reg = <0xf0002800 0x40>;
 			reg-names = "control";
 			label = "timer0";
 			status = "disabled";
 		};
-		eth0: ethernet@e0009800 {
+		eth0: ethernet@82004000 {
 			compatible = "litex,eth0";
 			interrupt-parent = <&intc0>;
 			interrupts = <3 0>;
-			reg = <0xe0009800 0x6b 0xb0000000 0x2000>;
+			reg = <0x82004000 0x6b 0xb0000000 0x2000>;
 			local-mac-address = [10 e2 d5 00 00 02];
 			reg-names = "control", "buffers";
 			label = "eth0";
