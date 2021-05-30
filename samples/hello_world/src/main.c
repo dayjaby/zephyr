@@ -8,7 +8,7 @@
 #include <sys/printk.h>
 #include <drivers/uart.h>
 
-#define MY_SERIAL DT_NODELABEL(usart2)
+#define MY_SERIAL DT_NODELABEL(usart1)
 
 void main(void)
 {
