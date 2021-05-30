@@ -6,8 +6,13 @@
 
 #include <zephyr.h>
 #include <sys/printk.h>
+#include <drivers/uart.h>
+
+#define MY_SERIAL DT_NODELABEL(usart2)
 
 void main(void)
 {
-	printk("Hello World! %s\n", CONFIG_BOARD);
+	struct device *dev = device_get_binding(DT_LABEL(MY_SERIAL));
+	printk("Hello World! %s with console %s and dev %i\n", CONFIG_BOARD, DT_LABEL(MY_SERIAL), (int)dev);
+	uart_poll_out(dev, 'A');
 }
