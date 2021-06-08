@@ -11,6 +11,11 @@
 / {
 	model = "LiteX VexRiscV";
 	compatible = "litex,vexriscv";
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &rstn;
+	};
 	chosen {
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
@@ -21,6 +26,22 @@
 		device_type = "memory";
 		reg = <0x40000000 0x10000000>;
 	};
+
+        leds {
+                compatible = "gpio-leds";
+                led0: led_0 {
+                        gpios = <&gpio0 0 0>;
+                        label = "TX";
+                };
+                led1: led_1 {
+                        gpios = <&gpio0 1 0>;
+                        label = "RX";
+                };
+                rstn: led_2 {
+                        gpios = <&gpio2 0 0>;
+                        label = "RSTN";
+                };
+        };
 };
 
 &uart0 {
@@ -31,45 +52,7 @@
 &timer0 {
 	status = "okay";
 };
-
-&eth0 {
-	status = "okay";
-};
-
-&dna0 {
-	status = "okay";
-};
-
-&spi0 {
-	status = "okay";
-};
-
 &prbs0 {
-	status = "okay";
-};
-
-&i2c0 {
-	status = "okay";
-	label = "I2C_0";
-};
-
-&pwm0 {
-	status = "okay";
-};
-
-&gpio_out {
-	status = "okay";
-};
-
-&gpio_in {
-	status = "okay";
-};
-
-&i2s_rx {
-	status = "okay";
-};
-
-&i2s_tx {
 	status = "okay";
 };
 
@@ -83,4 +66,29 @@
 
 &clock0 {
 	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+dw1000_spi: &spi0 {
+	status = "okay";
+        litex_dw_spi: litex_dw1000_spi@0 {
+                compatible = "decawave,dw1000";
+                status = "okay";
+                reg = <0>;
+		label = "dw1000_spi_if";
+		int-gpios = <&gpio1 2 0>;
+		reset-gpios = <&gpio2 0 0>;
+                spi-max-frequency = <8000000>;
+	};
 };

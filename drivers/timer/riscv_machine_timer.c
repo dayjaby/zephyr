@@ -23,6 +23,10 @@ static void set_mtimecmp(uint64_t time)
 {
 #ifdef CONFIG_64BIT
 	*(volatile uint64_t *)RISCV_MTIMECMP_BASE = time;
+#ifdef RISCV_MTIME_LATCH
+	volatile uint32_t *latch = (uint32_t *)RISCV_MTIME_LATCH;
+	*latch = 1;
+#endif
 #else
 	volatile uint32_t *r = (uint32_t *)RISCV_MTIMECMP_BASE;
 
@@ -32,9 +36,17 @@ static void set_mtimecmp(uint64_t time)
 	 * spurious interrupts: always set the high word to a max
 	 * value first.
 	 */
+#ifdef RISCV_MTIME_LATCH
+	volatile uint32_t *latch = (uint32_t *)RISCV_MTIME_LATCH;
+	*latch = 0;
+	r[0] = (uint32_t)time;
+	r[1] = (uint32_t)(time >> 32);
+	*latch = 1;
+#else
 	r[1] = 0xffffffff;
 	r[0] = (uint32_t)time;
 	r[1] = (uint32_t)(time >> 32);
+#endif
 #endif
 }
 
@@ -46,11 +58,18 @@ static uint64_t mtime(void)
 	volatile uint32_t *r = (uint32_t *)RISCV_MTIME_BASE;
 	uint32_t lo, hi;
 
+#ifdef RISCV_MTIME_LATCH
+	volatile uint32_t *latch = (uint32_t *)RISCV_MTIME_LATCH;
+	*latch = 1;
+#endif
 	/* Likewise, must guard against rollover when reading */
 	do {
 		hi = r[1];
 		lo = r[0];
 	} while (r[1] != hi);
+#ifdef RISCV_MTIME_LATCH
+	*latch = 0;
+#endif
 
 	return (((uint64_t)hi) << 32) | lo;
 #endif
@@ -132,7 +151,7 @@ void z_clock_set_timeout(int32_t ticks, bool idle)
 
 uint32_t z_clock_elapsed(void)
 {
-	if (!IS_ENABLED(CONFIG_TICKLESS_KERNEL)) {
+	if (!TICKLESS) {
 		return 0;
 	}
 

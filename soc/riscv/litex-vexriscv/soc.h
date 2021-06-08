@@ -17,6 +17,11 @@
 #define RISCV_RAM_BASE              DT_REG_ADDR(DT_INST(0, mmio_sram))
 #define RISCV_RAM_SIZE              DT_REG_SIZE(DT_INST(0, mmio_sram))
 
+/* Timer configuration */
+#define RISCV_MTIME_LATCH            0xf0000800
+#define RISCV_MTIME_BASE             0xf0000804
+#define RISCV_MTIMECMP_BASE          0xf000080c
+
 #ifndef _ASMLANGUAGE
 /* CSR access helpers */
 

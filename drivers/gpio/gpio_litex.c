@@ -21,9 +21,18 @@
 #define GPIO_LOW        0
 #define GPIO_HIGH       1
 
+#define GPIO_TRI_OFFSET_OE 0
+#define GPIO_TRI_OFFSET_IN 1
+#define GPIO_TRI_OFFSET_OUT 2
+#define GPIO_TRI_OE_INPUT 0
+#define GPIO_TRI_OE_OUTPUT 1
+#define GPIO_TRI_WORD 4
+
 #define LOG_LEVEL CONFIG_GPIO_LOG_LEVEL
 LOG_MODULE_REGISTER(gpio_litex);
 
+static const char *LITEX_LOG_TRISTATE_NGPIOS_MISMATCH =
+	"Cannot handle more than one gpio in a tristate\n";
 static const char *LITEX_LOG_REG_SIZE_NGPIOS_MISMATCH =
 	"Cannot handle all of the gpios with the register of given size\n";
 static const char *LITEX_LOG_CANNOT_CHANGE_DIR =
@@ -34,6 +43,7 @@ struct gpio_litex_cfg {
 	int reg_size;
 	int nr_gpios;
 	bool port_is_output;
+	bool port_is_tristate;
 };
 
 struct gpio_litex_data {
@@ -52,26 +62,52 @@ static inline void set_bit(const struct gpio_litex_cfg *config,
 {
 	int regv, new_regv;
 
-	regv = litex_read(config->reg_addr, config->reg_size);
-	new_regv = (regv & ~BIT(bit)) | (val << bit);
-	litex_write(config->reg_addr, config->reg_size, new_regv);
+	if (config->port_is_tristate)
+	{
+		// The tristate registry contains 4 bytes for output_enabled, n bytes for input and n bytes for output
+		//regv = litex_read(config->reg_addr + GPIO_TRI_OFFSET_OUT, GPIO_TRI_WORD);
+		//new_regv = (regv & ~BIT(bit)) | (val << bit);
+		litex_write8(config->reg_addr + GPIO_TRI_OFFSET_OUT, val);
+	} else {
+		regv = litex_read(config->reg_addr, config->reg_size);
+		new_regv = (regv & ~BIT(bit)) | (val << bit);
+		litex_write(config->reg_addr, config->reg_size, new_regv);
+	}
 }
 
 static inline uint32_t get_bit(const struct gpio_litex_cfg *config, uint32_t bit)
 {
-	int regv = litex_read(config->reg_addr, config->reg_size);
+	printk("addr: %i, bit %i\n", (uint32_t)config->reg_addr, bit);
+	int regv;
+	if (config->port_is_tristate)
+	{
+		litex_read8(config->reg_addr + GPIO_TRI_OFFSET_IN);
+	} else {
+		litex_read(config->reg_addr, config->reg_size);
+	}
 
 	return !!(regv & BIT(bit));
 }
 
 static inline void set_port(const struct gpio_litex_cfg *config, uint32_t value)
 {
-	litex_write(config->reg_addr, config->reg_size, value);
+	if (config->port_is_tristate)
+	{
+		litex_write8(config->reg_addr + GPIO_TRI_OFFSET_OUT, value);
+	} else {
+		litex_write(config->reg_addr, config->reg_size, value);
+	}
 }
 
 static inline uint32_t get_port(const struct gpio_litex_cfg *config)
 {
-	int regv = litex_read(config->reg_addr, config->reg_size);
+	int regv;
+	if (config->port_is_tristate)
+	{
+		regv = litex_read8(config->reg_addr + GPIO_TRI_OFFSET_IN);
+	} else {
+		regv = litex_read(config->reg_addr, config->reg_size);
+	}
 
 	return (regv & BIT_MASK(config->nr_gpios));
 }
@@ -81,10 +117,21 @@ static inline uint32_t get_port(const struct gpio_litex_cfg *config)
 static int gpio_litex_init(const struct device *dev)
 {
 	const struct gpio_litex_cfg *gpio_config = DEV_GPIO_CFG(dev);
-
+	int pins;
+	if (gpio_config->port_is_tristate)
+	{
+		pins = 1;
+	} else {
+		pins = gpio_config->reg_size * 8;
+	}
 	/* each 4-byte register is able to handle 8 GPIO pins */
-	if (gpio_config->nr_gpios > (gpio_config->reg_size * 8)) {
-		LOG_ERR("%s", LITEX_LOG_REG_SIZE_NGPIOS_MISMATCH);
+	if (gpio_config->nr_gpios > pins) {
+		if (gpio_config->port_is_tristate)
+		{
+			LOG_ERR("%s", LITEX_LOG_TRISTATE_NGPIOS_MISMATCH);
+		} else {
+			LOG_ERR("%s", LITEX_LOG_REG_SIZE_NGPIOS_MISMATCH);
+		}
 		return -EINVAL;
 	}
 
@@ -109,9 +156,12 @@ static int gpio_litex_configure(const struct device *dev,
 	}
 
 	if (flags & GPIO_OUTPUT) {
-		if (!gpio_config->port_is_output) {
+		if (!gpio_config->port_is_output && !gpio_config->port_is_tristate) {
 			LOG_ERR("%s", LITEX_LOG_CANNOT_CHANGE_DIR);
 			return -EINVAL;
+		}
+		if (gpio_config->port_is_tristate) {
+			litex_write(gpio_config->reg_addr, GPIO_TRI_WORD, GPIO_TRI_OE_OUTPUT);
 		}
 
 		if (flags & GPIO_OUTPUT_INIT_HIGH) {
@@ -120,9 +170,13 @@ static int gpio_litex_configure(const struct device *dev,
 			set_bit(gpio_config, pin, GPIO_LOW);
 		}
 	} else {
-		if (gpio_config->port_is_output) {
+		if (gpio_config->port_is_output && !gpio_config->port_is_tristate) {
 			LOG_ERR("%s", LITEX_LOG_CANNOT_CHANGE_DIR);
 			return -EINVAL;
+		}
+
+		if (gpio_config->port_is_tristate) {
+			litex_write(gpio_config->reg_addr, GPIO_TRI_WORD, GPIO_TRI_OE_INPUT);
 		}
 	}
 
@@ -227,6 +281,7 @@ static const struct gpio_driver_api gpio_litex_driver_api = {
 		.reg_size = DT_INST_REG_SIZE(n) / 4, \
 		.nr_gpios = DT_INST_PROP(n, ngpios), \
 		.port_is_output = DT_INST_PROP(n, port_is_output), \
+		.port_is_tristate = DT_INST_PROP(n, port_is_tristate), \
 	}; \
 	static struct gpio_litex_data gpio_litex_data_##n; \
 \

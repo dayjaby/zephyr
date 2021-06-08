@@ -177,7 +177,6 @@ source "drivers/timer/Kconfig.stm32_lptim"
 
 config RISCV_MACHINE_TIMER
 	bool "RISCV Machine Timer"
-	depends on SOC_FAMILY_RISCV_PRIVILEGE
 	select TICKLESS_CAPABLE
 	help
 	  This module implements a kernel device driver for the generic RISCV machine
@@ -197,7 +196,6 @@ config RV32M1_LPTMR_TIMER
 config LITEX_TIMER
 	bool "LiteX Timer"
 	default y
-	depends on !TICKLESS_IDLE
 	depends on SOC_RISCV32_LITEX_VEXRISCV
 	help
 	  This module implements a kernel device driver for LiteX Timer.

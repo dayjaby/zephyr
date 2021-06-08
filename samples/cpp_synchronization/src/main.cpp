@@ -23,6 +23,9 @@
 #include <arch/cpu.h>
 #include <sys/printk.h>
 
+#include <device.h>
+#include <devicetree.h>
+#include <drivers/gpio.h>
 /**
  * @class semaphore the basic pure virtual semaphore class
  */
@@ -34,10 +37,34 @@ public:
 };
 
 /* specify delay between greetings (in ms); compute equivalent in ticks */
-#define SLEEPTIME  500
+#define SLEEPTIME 5500
 #define STACKSIZE 2000
 
+#define LED_TX_NODE DT_ALIAS(led0)
+#define LED_RX_NODE DT_ALIAS(led1)
+#define GPIO_RSTN_NODE DT_ALIAS(led2)
+
+#if DT_NODE_HAS_STATUS(LED_TX_NODE, okay)
+#define LED_TX_LABEL	DT_GPIO_LABEL(LED_TX_NODE, gpios)
+#define LED_TX_PIN	DT_GPIO_PIN(LED_TX_NODE, gpios)
+#define LED_TX_FLAGS	DT_GPIO_FLAGS(LED_TX_NODE, gpios)
+#endif
+
+#if DT_NODE_HAS_STATUS(LED_RX_NODE, okay)
+#define LED_RX_LABEL	DT_GPIO_LABEL(LED_RX_NODE, gpios)
+#define LED_RX_PIN	DT_GPIO_PIN(LED_RX_NODE, gpios)
+#define LED_RX_FLAGS	DT_GPIO_FLAGS(LED_RX_NODE, gpios)
+#endif
+
+#if DT_NODE_HAS_STATUS(GPIO_RSTN_NODE, okay)
+#define GPIO_RSTN_LABEL DT_GPIO_LABEL(GPIO_RSTN_NODE, gpios)
+#define GPIO_RSTN_PIN 0
+// DT_GPIO_PIN(GPIO_RSTN_NODE, gpios)
+#define GPIO_RSTN_FLAGS DT_GPIO_FLAGS(GPIO_RSTN_NODE, gpios)
+#endif
+
 struct k_thread coop_thread;
+
 K_THREAD_STACK_DEFINE(coop_stack, STACKSIZE);
 
 /*
@@ -135,6 +162,22 @@ void coop_thread_entry(void)
 
 void main(void)
 {
+	const struct device *led_tx;
+	const struct device *rstn;
+	int ret;
+	led_tx = device_get_binding(LED_TX_LABEL);
+	ret = gpio_pin_configure(led_tx, LED_TX_PIN, GPIO_OUTPUT | LED_RX_FLAGS);
+	gpio_pin_set(led_tx, LED_TX_PIN, (int)1);
+
+	rstn = device_get_binding(GPIO_RSTN_LABEL);
+	ret = gpio_pin_configure(rstn, GPIO_RSTN_PIN, GPIO_INPUT);
+	int rstn_in = gpio_pin_get(rstn, GPIO_RSTN_PIN);
+	printk("Pin0: %i\n", *(uint32_t*)0xf0001804);
+	if (rstn_in) {
+		printk("%s: GPIO RSTn is high!\n", __FUNCTION__);
+	} else {
+		printk("%s: GPIO RSTn is low!\n", __FUNCTION__);
+	}
 	struct k_timer timer;
 
 	k_thread_create(&coop_thread, coop_stack, STACKSIZE,
@@ -148,10 +191,12 @@ void main(void)
 
 		/* wait a while, then let coop thread have a turn */
 		k_timer_start(&timer, K_MSEC(SLEEPTIME), K_NO_WAIT);
+		printk("%s: Hello World!\n", __FUNCTION__);
 		k_timer_status_sync(&timer);
 		sem_coop.give();
 
 		/* Wait for coop thread to let us have a turn */
 		sem_main.wait();
+		gpio_pin_set(led_tx, LED_RX_PIN, (int)0);
 	}
 }

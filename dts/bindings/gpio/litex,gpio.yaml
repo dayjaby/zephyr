@@ -15,6 +15,10 @@ properties:
       type: boolean
       description: Indicates if the port is an output port
 
+    port-is-tristate:
+      type: boolean
+      description: Indicates if the port is a tristate and can serve as input and as output
+
     reg:
       required: true
 
