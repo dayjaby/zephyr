@@ -18,9 +18,9 @@
 #define RISCV_RAM_SIZE              DT_REG_SIZE(DT_INST(0, mmio_sram))
 
 /* Timer configuration */
-#define RISCV_MTIME_LATCH            0xf0000800
-#define RISCV_MTIME_BASE             0xf0000804
-#define RISCV_MTIMECMP_BASE          0xf000080c
+#define RISCV_MTIME_LATCH            0xf0003800
+#define RISCV_MTIME_BASE             0xf0003804
+#define RISCV_MTIMECMP_BASE          0xf000380c
 
 #ifndef _ASMLANGUAGE
 /* CSR access helpers */
@@ -33,27 +33,27 @@ static inline unsigned char litex_read8(unsigned long addr)
 static inline unsigned short litex_read16(unsigned long addr)
 {
 	return (sys_read8(addr) << 8)
-		| sys_read8(addr + 0x4);
+		| sys_read8(addr + 0x1);
 }
 
 static inline unsigned int litex_read32(unsigned long addr)
 {
 	return (sys_read8(addr) << 24)
-		| (sys_read8(addr + 0x4) << 16)
-		| (sys_read8(addr + 0x8) << 8)
-		| sys_read8(addr + 0xc);
+		| (sys_read8(addr + 0x1) << 16)
+		| (sys_read8(addr + 0x2) << 8)
+		| sys_read8(addr + 0x3);
 }
 
 static inline uint64_t litex_read64(unsigned long addr)
 {
 	return (((uint64_t)sys_read8(addr)) << 56)
-		| ((uint64_t)sys_read8(addr + 0x4) << 48)
-		| ((uint64_t)sys_read8(addr + 0x8) << 40)
-		| ((uint64_t)sys_read8(addr + 0xc) << 32)
-		| ((uint64_t)sys_read8(addr + 0x10) << 24)
-		| ((uint64_t)sys_read8(addr + 0x14) << 16)
-		| ((uint64_t)sys_read8(addr + 0x18) << 8)
-		| (uint64_t)sys_read8(addr + 0x1c);
+		| ((uint64_t)sys_read8(addr + 0x1) << 48)
+		| ((uint64_t)sys_read8(addr + 0x2) << 40)
+		| ((uint64_t)sys_read8(addr + 0x3) << 32)
+		| ((uint64_t)sys_read8(addr + 0x4) << 24)
+		| ((uint64_t)sys_read8(addr + 0x5) << 16)
+		| ((uint64_t)sys_read8(addr + 0x6) << 8)
+		| (uint64_t)sys_read8(addr + 0x7);
 }
 
 static inline void litex_write8(unsigned char value, unsigned long addr)
@@ -64,15 +64,15 @@ static inline void litex_write8(unsigned char value, unsigned long addr)
 static inline void litex_write16(unsigned short value, unsigned long addr)
 {
 	sys_write8(value >> 8, addr);
-	sys_write8(value, addr + 0x4);
+	sys_write8(value, addr + 0x1);
 }
 
 static inline void litex_write32(unsigned int value, unsigned long addr)
 {
 	sys_write8(value >> 24, addr);
-	sys_write8(value >> 16, addr + 0x4);
-	sys_write8(value >> 8, addr + 0x8);
-	sys_write8(value, addr + 0xC);
+	sys_write8(value >> 16, addr + 0x1);
+	sys_write8(value >> 8, addr + 0x2);
+	sys_write8(value, addr + 0x3);
 }
 
 static inline void litex_write(volatile uint32_t *reg, uint32_t reg_size, uint32_t val)

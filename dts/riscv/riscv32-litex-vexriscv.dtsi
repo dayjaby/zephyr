@@ -41,20 +41,20 @@
 			reg-names = "irq_mask", "irq_pending";
 			riscv,max-priority = <7>;
 		};
-		uart0: serial@f0005800 {
+		uart0: serial@f0006000 {
 			compatible = "litex,uart0";
 			interrupt-parent = <&intc0>;
 			interrupts = <8 0>;
-			reg = <0xf0005800 0x18>;
+			reg = <0xf0006000 0x18>;
 			reg-names = "control";
 			label = "uart0";
 			status = "disabled";
 		};
-		timer0: timer@f0005000 {
+		timer0: timer@f0005800 {
 			compatible = "litex,timer0";
 			interrupt-parent = <&intc0>;
 			interrupts = <7 0>;
-			reg = <0xf0005000 0x40>;
+			reg = <0xf0005800 0x40>;
 			reg-names = "control";
 			label = "timer0";
 			status = "disabled";

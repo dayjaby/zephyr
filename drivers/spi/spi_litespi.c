@@ -12,8 +12,49 @@ LOG_MODULE_REGISTER(spi_litespi);
 #include "spi_litespi.h"
 #include <stdbool.h>
 
+static inline uint32_t spi_master_control_read(void) {
+        return *((uint32_t*)SPI_CONTROL_REG);
+}
+static inline void spi_master_control_write(uint32_t v) {
+	*((uint32_t*)SPI_CONTROL_REG) = v;
+}
+static inline uint32_t spi_master_control_start_extract(uint32_t oldword) {
+        uint32_t mask = ((1 << 1)-1);
+        return ( (oldword >> 0) & mask );
+}
+static inline uint32_t spi_master_control_start_read(void) {
+        uint32_t word = spi_master_control_read();
+        return spi_master_control_start_extract(word);
+}
+static inline uint32_t spi_master_control_start_replace(uint32_t oldword, uint32_t plain_value) {
+        uint32_t mask = ((1 << 1)-1);
+        return (oldword & (~(mask << 0))) | (mask & plain_value)<< 0 ;
+}                                                       
+static inline void spi_master_control_start_write(uint32_t plain_value) {
+        uint32_t oldword = spi_master_control_read();
+        uint32_t newword = spi_master_control_start_replace(oldword, plain_value);
+        spi_master_control_write(newword);
+}
+static inline uint32_t spi_master_control_length_extract(uint32_t oldword) {
+        uint32_t mask = ((1 << 8)-1);
+        return ( (oldword >> 8) & mask );
+}
+static inline uint32_t spi_master_control_length_read(void) {
+        uint32_t word = spi_master_control_read();
+        return spi_master_control_length_extract(word);
+}
+static inline uint32_t spi_master_control_length_replace(uint32_t oldword, uint32_t plain_value) {
+        uint32_t mask = ((1 << 8)-1);
+        return (oldword & (~(mask << 8))) | (mask & plain_value)<< 8 ;
+}
+static inline void spi_master_control_length_write(uint32_t plain_value) {
+        uint32_t oldword = spi_master_control_read();
+        uint32_t newword = spi_master_control_length_replace(oldword, plain_value);
+        spi_master_control_write(newword);
+}
+
 /* Helper Functions */
-static int spi_config(const struct spi_config *config, uint16_t *control)
+static int spi_config(const struct spi_config *config)
 {
 	uint8_t cs = 0x00;
 
@@ -65,22 +106,16 @@ static int spi_config(const struct spi_config *config, uint16_t *control)
 		litex_write8(SPI_ENABLE, SPI_LOOPBACK_REG);
 	}
 	/* Set word size */
-	*control = (uint16_t) (SPI_WORD_SIZE_GET(config->operation)
-			<< POSITION_WORD_SIZE);
-	/* Write configurations */
-	litex_write8(cs, SPI_CS_REG);
-	litex_write16(*control, SPI_CONTROL_REG);
-
+	spi_master_control_length_write(SPI_WORD_SIZE);
 	return 0;
 }
 
-static void spi_litespi_send(const struct device *dev, uint8_t frame,
-		             uint16_t control)
+static void spi_litespi_send(const struct device *dev, uint8_t frame)
 {
 	/* Write frame to register */
 	litex_write8(frame, SPI_MOSI_DATA_REG);
 	/* Start the transfer */
-	litex_write16(control | SPI_ENABLE, SPI_CONTROL_REG);
+	spi_master_control_start_write(SPI_ENABLE);
 	/* Wait until the transfer ends */
 	while (!(litex_read8(SPI_STATUS_REG)))
 		;
@@ -93,8 +128,7 @@ static uint8_t spi_litespi_recv(void)
 }
 
 static void spi_litespi_xfer(const struct device *dev,
-			     const struct spi_config *config,
-			     uint16_t control)
+			     const struct spi_config *config)
 {
 	struct spi_context *ctx = &SPI_DATA(dev)->ctx;
 	uint32_t send_len = spi_context_longest_current_buf(ctx);
@@ -103,11 +137,10 @@ static void spi_litespi_xfer(const struct device *dev,
 	for (uint32_t i = 0; i < send_len; i++) {
 		/* Send a frame */
 		if (i < ctx->tx_len) {
-			spi_litespi_send(dev, (uint8_t) (ctx->tx_buf)[i],
-					control);
+			spi_litespi_send(dev, (uint8_t) (ctx->tx_buf)[i]);
 		} else {
 			/* Send dummy bytes */
-			spi_litespi_send(dev, 0, control);
+			spi_litespi_send(dev, 0);
 		}
 		/* Receive a frame */
 		read_data = spi_litespi_recv();
@@ -130,11 +163,13 @@ static int spi_litespi_transceive(const struct device *dev,
 				  const struct spi_buf_set *tx_bufs,
 				  const struct spi_buf_set *rx_bufs)
 {
-	uint16_t control = 0;
-
-	spi_config(config, &control);
+	spi_config(config);
+	litex_write8(1, SPI_CS_REG);
 	spi_context_buffers_setup(&SPI_DATA(dev)->ctx, tx_bufs, rx_bufs, 1);
-	spi_litespi_xfer(dev, config, control);
+	spi_litespi_xfer(dev, config);
+	litex_write8(0, SPI_CS_REG);
+	spi_master_control_start_write(0);
+	spi_master_control_length_write(0);
 	return 0;
 }
 

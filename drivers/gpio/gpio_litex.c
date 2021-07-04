@@ -67,7 +67,7 @@ static inline void set_bit(const struct gpio_litex_cfg *config,
 		// The tristate registry contains 4 bytes for output_enabled, n bytes for input and n bytes for output
 		//regv = litex_read(config->reg_addr + GPIO_TRI_OFFSET_OUT, GPIO_TRI_WORD);
 		//new_regv = (regv & ~BIT(bit)) | (val << bit);
-		litex_write8((uint32_t)(config->reg_addr + GPIO_TRI_OFFSET_OUT), (unsigned char)val);
+		litex_write8((unsigned char)val, (uint32_t)(config->reg_addr + GPIO_TRI_OFFSET_OUT));
 	} else {
 		regv = litex_read(config->reg_addr, config->reg_size);
 		new_regv = (regv & ~BIT(bit)) | (val << bit);
@@ -93,7 +93,7 @@ static inline void set_port(const struct gpio_litex_cfg *config, uint32_t value)
 {
 	if (config->port_is_tristate)
 	{
-		litex_write8((uint32_t)(config->reg_addr + GPIO_TRI_OFFSET_OUT), (unsigned char)value);
+		litex_write8((unsigned char)value, (uint32_t)(config->reg_addr + GPIO_TRI_OFFSET_OUT));
 	} else {
 		litex_write(config->reg_addr, config->reg_size, value);
 	}

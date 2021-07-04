@@ -152,9 +152,9 @@ int z_clock_driver_init(const struct device *device)
 
 	for (int i = 0; i < 4; i++) {
 		sys_write8(k_ticks_to_cyc_floor32(1) >> (24 - i * 8),
-				TIMER_RELOAD_ADDR + i * 0x4);
+				TIMER_RELOAD_ADDR + i * 0x1);
 		sys_write8(k_ticks_to_cyc_floor32(1) >> (24 - i * 8),
-				TIMER_LOAD_ADDR + i * 0x4);
+				TIMER_LOAD_ADDR + i * 0x1);
 	}
 
 	sys_write8(TIMER_ENABLE, TIMER_EN_ADDR);
