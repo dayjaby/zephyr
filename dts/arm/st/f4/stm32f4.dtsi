@@ -250,7 +250,7 @@
 			interrupts = <35 5>;
 			status = "disabled";
 			label = "SPI_1";
-			cs-gpios = <&gpiob 6 GPIO_ACTIVE_LOW>;
+			cs-gpios = <&gpioc 0 GPIO_ACTIVE_LOW>;
 		};
 
 		usbotg_fs: usb@50000000 {

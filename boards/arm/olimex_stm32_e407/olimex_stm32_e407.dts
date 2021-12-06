@@ -82,6 +82,13 @@
 	status = "okay";
 };
 
+
+&spi1 {
+	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pa5
+		     &spi1_miso_pa6 &spi1_mosi_pb5>;
+	status = "okay";
+};
+
 &rtc {
 	status = "okay";
 };
@@ -113,4 +120,17 @@ usb_otg2: &usbotg_hs {
 		     &eth_tx_en_pg11
 		     &eth_txd0_pg13
 		     &eth_txd1_pg14>;
+};
+
+dw1000_spi: &spi1 {
+        status = "okay";
+        litex_dw_spi: stm_dw1000_spi@0 { 
+                compatible = "decawave,dw1000";
+                status = "okay";
+                reg = <0>;
+                label = "dw1000_spi_if";
+                int-gpios = <&gpiog 15 GPIO_ACTIVE_HIGH>;
+                reset-gpios = <&gpiog 8 GPIO_ACTIVE_LOW>;
+                spi-max-frequency = <8000000>;
+        };
 };

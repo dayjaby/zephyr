@@ -18,7 +18,7 @@
 		zephyr,shell-uart = &usart2;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
-		zephyr,can-primary = &can1;
+		zephyr,can-primary = &can3;
 	};
 
 	leds {
@@ -66,11 +66,13 @@
 	apb2-prescaler = <1>;
 };
 
+/*
 &usart1 {
 	pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
 	current-speed = <115200>;
 	status = "okay";
 };
+*/
 
 &usart2 {
 	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
@@ -78,11 +80,18 @@
 	status = "okay";
 };
 
+&usart3 {
+	pinctrl-0 = <&usart3_tx_pc10 &usart3_rx_pc11>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/*
 &i2c1 {
 	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
 	status = "okay";
-	clock-frequency = <I2C_BITRATE_FAST>;
-};
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};*/
 
 &i2c2 {
 	pinctrl-0 = <&i2c2_scl_pb10 &i2c2_sda_pb3>;
@@ -93,13 +102,32 @@
 &i2c3 {
 	pinctrl-0 = <&i2c3_scl_pa8 &i2c3_sda_pb4>;
 	status = "okay";
-	clock-frequency = <I2C_BITRATE_FAST>;
+	clock-frequency = <I2C_BITRATE_STANDARD>;
 };
 
 &spi1 {
 	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pa5
 		     &spi1_miso_pa6 &spi1_mosi_pa7>;
 	status = "okay";
+
+        cs-gpios = <&gpioc 0 GPIO_ACTIVE_LOW>;
+        can3: mcp2515@0 { 
+                compatible = "microchip,mcp2515";
+                spi-max-frequency = <1000000>;
+                int-gpios = <&gpioa 9 GPIO_ACTIVE_LOW>;
+                // reset-gpios = <&gpiob 10 GPIO_ACTIVE_LOW>;
+                status = "okay";
+                label = "CAN_2";
+                reg = <0x0>;
+                osc-freq = <8000000>;
+                bus-speed = <125000>;
+                sjw = <1>;
+                prop-seg = <2>;
+                phase-seg1 = <7>;
+                phase-seg2 = <6>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+        };
 };
 
 &rtc {
@@ -111,9 +139,9 @@
 };
 
 &can1 {
-	/* CAUTION: PB8 and PB9 may conflict with same pins of I2C1 */
+	// CAUTION: PB8 and PB9 may conflict with same pins of I2C1
 	pinctrl-0 = <&can1_rx_pb8 &can1_tx_pb9>;
-	bus-speed = <125000>;
+	bus-speed = <1000000>;
 	sjw = <1>;
 	prop-seg = <0>;
 	phase-seg1 = <6>;
@@ -158,3 +186,17 @@
 		};
 	};
 };
+
+/*
+dw1000_spi: &spi1 {
+        status = "okay";
+        litex_dw_spi: stm_dw1000_spi@0 { 
+                compatible = "decawave,dw1000";
+                status = "okay";
+                reg = <0>;
+                label = "dw1000_spi_if";
+                int-gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+                reset-gpios = <&gpiob 10 GPIO_ACTIVE_LOW>;
+                spi-max-frequency = <8000000>;
+        };
+};*/

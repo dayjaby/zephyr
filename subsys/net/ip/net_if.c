@@ -888,7 +888,11 @@ static struct net_if_router *iface_router_find_default(struct net_if *iface,
 	/* Todo: addr will need to be handled */
 	ARG_UNUSED(addr);
 
-	k_mutex_lock(&lock, K_FOREVER);
+	if (k_mutex_lock(&lock, K_MSEC(1000)) != 0) {
+		return router;
+	}
+	NET_DBG("iface_router_find_default");
+	//k_mutex_lock(&lock, K_FOREVER);
 
 	for (i = 0; i < CONFIG_NET_MAX_ROUTERS; i++) {
 		if (!routers[i].is_used ||

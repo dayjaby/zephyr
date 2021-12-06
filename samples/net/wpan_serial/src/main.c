@@ -13,11 +13,10 @@
  */
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(wpan_serial, CONFIG_USB_DEVICE_LOG_LEVEL);
+LOG_MODULE_REGISTER(wpan_serial, CONFIG_LOG_DEFAULT_LEVEL);
 
 #include <drivers/uart.h>
 #include <zephyr.h>
-#include <usb/usb_device.h>
 #include <random/rand32.h>
 
 #include <net/buf.h>
@@ -145,6 +144,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 		}
 
 		while (uart_fifo_read(dev, &byte, sizeof(byte))) {
+			uart_poll_out(dev, byte);
 			if (slip_process_byte(byte)) {
 				/**
 				 * slip_process_byte() returns 1 on
@@ -454,7 +454,7 @@ static uint8_t *get_mac(const struct device *dev)
 
 static bool init_ieee802154(void)
 {
-	LOG_INF("Initialize ieee802.15.4");
+	LOG_INF("Initialize ieee802.15.4 %i", strlen(CONFIG_NET_CONFIG_IEEE802154_DEV_NAME));
 
 	ieee802154_dev = device_get_binding(CONFIG_NET_CONFIG_IEEE802154_DEV_NAME);
 	if (!ieee802154_dev) {
@@ -523,38 +523,28 @@ int net_recv_data(struct net_if *iface, struct net_pkt *pkt)
 void main(void)
 {
 	const struct device *dev;
-	uint32_t baudrate, dtr = 0U;
+	uint32_t baudrate = 115200, dtr = 0U;
 	int ret;
 
 	LOG_INF("Starting wpan_serial application");
+	/* Initialize ieee802154 device */
+	if (!init_ieee802154()) {
+		LOG_ERR("Unable to initialize ieee802154");
+		return;
+	}
 
-	dev = device_get_binding("CDC_ACM_0");
+	dev = device_get_binding("UART_3");
 	if (!dev) {
 		LOG_ERR("CDC ACM device not found");
 		return;
 	}
 
-	ret = usb_enable(NULL);
 	if (ret != 0) {
 		LOG_ERR("Failed to enable USB");
 		return;
 	}
 
-	LOG_DBG("Wait for DTR");
-
-	while (1) {
-		uart_line_ctrl_get(dev, UART_LINE_CTRL_DTR, &dtr);
-		if (dtr) {
-			break;
-		} else {
-			/* Give CPU resources to low priority threads. */
-			k_sleep(K_MSEC(100));
-		}
-	}
-
 	uart_dev = dev;
-
-	LOG_DBG("DTR set, continue");
 
 	ret = uart_line_ctrl_get(dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
 	if (ret) {
@@ -574,11 +564,6 @@ void main(void)
 	/* Initialize TX queue */
 	init_tx_queue();
 
-	/* Initialize ieee802154 device */
-	if (!init_ieee802154()) {
-		LOG_ERR("Unable to initialize ieee802154");
-		return;
-	}
 
 	uart_irq_callback_set(dev, interrupt_handler);
 

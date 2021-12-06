@@ -299,7 +299,7 @@ static int cmd_send(const struct shell *shell, size_t argc, char **argv)
 		return -EINVAL;
 	}
 
-	shell_print(shell, "Send frame with ID 0x%x (%s id) and %d data bytes",
+	shell_print(shell, "Send frame (0x%02x%02x...) with ID 0x%x (%s id) and %d data bytes", frame.data[0], frame.data[1],
 		    frame.id, ext ? "extended" : "standard", frame.dlc);
 
 	ret = can_send(can_dev, &frame, K_FOREVER, NULL, NULL);
