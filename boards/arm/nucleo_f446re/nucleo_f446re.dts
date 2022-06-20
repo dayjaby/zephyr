@@ -27,6 +27,11 @@
 			gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
 			label = "User LD2";
 		};
+
+		custom_led_3: led_3 {
+			gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>;
+			label = "User LD3";
+		};
 	};
 
 	gpio_keys {
@@ -39,6 +44,7 @@
 
 	aliases {
 		led0 = &green_led_2;
+        led1 = &custom_led_3;
 		sw0 = &user_button;
 	};
 };
