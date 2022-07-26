@@ -36,7 +36,7 @@ static int cmd_i2c_scan(const struct shell *shell,
 			size_t argc, char **argv)
 {
 	const struct device *dev;
-	uint8_t cnt = 0, first = 0x04, last = 0x77;
+	uint8_t cnt = 0, first = 0x40, last = 0x77;
 
 	dev = device_get_binding(argv[1]);
 

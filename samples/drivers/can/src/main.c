@@ -25,7 +25,7 @@
 K_THREAD_STACK_DEFINE(rx_thread_stack, RX_THREAD_STACK_SIZE);
 K_THREAD_STACK_DEFINE(poll_state_stack, STATE_POLL_THREAD_STACK_SIZE);
 
-const struct device *can_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_can_primary));
+const struct device *can_dev; // DEVICE_DT_GET(DT_CHOSEN(zephyr_can_primary));
 struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
 
 struct k_thread rx_thread_data;
@@ -166,6 +166,7 @@ void state_change_isr(enum can_state state, struct can_bus_err_cnt err_cnt)
 
 void main(void)
 {
+	can_dev = device_get_binding("CAN_2");
 	const struct zcan_filter change_led_filter = {
 		.id_type = CAN_STANDARD_IDENTIFIER,
 		.rtr = CAN_DATAFRAME,

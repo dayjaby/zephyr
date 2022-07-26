@@ -84,3 +84,16 @@
 &clock0 {
 	status = "okay";
 };
+
+dw1000_spi: &spi0 {
+        status = "okay";
+        litex_dw_spi: arty_dw1000_spi@0 { 
+                compatible = "decawave,dw1000";
+                status = "okay";
+                reg = <0>;
+                label = "dw1000_spi_if";
+                int-gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+                reset-gpios = <&gpiob 10 GPIO_ACTIVE_LOW>;
+                spi-max-frequency = <8000000>;
+        };
+};

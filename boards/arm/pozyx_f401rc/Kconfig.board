@@ -1,0 +1,8 @@
+# Pozyx F401RC board configuration
+
+# Copyright (c) 2016 Linaro Limited.
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_POZYX_F401RC
+	bool "Pozyx F401RC Development Board"
+	depends on SOC_STM32F401XC
